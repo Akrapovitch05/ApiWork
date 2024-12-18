@@ -45,7 +45,6 @@ namespace apiwork.Controllers
             return result;
         }
 
-
         // GET: api/Service/5
         [HttpGet("{id}")]
         public async Task<ActionResult<Service>> GetService(int id)
@@ -70,6 +69,7 @@ namespace apiwork.Controllers
             return CreatedAtAction("GetService", new { id = service.ServiceID }, service);
         }
 
+        // PUT: api/Service/5
         [HttpPut("{id}")]
         public async Task<IActionResult> PutService(int id, [FromBody] Service service)
         {
@@ -101,7 +101,6 @@ namespace apiwork.Controllers
             return Ok(existingService); // Retourne l'objet mis à jour
         }
 
-
         // DELETE: api/Service/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteService(int id)
@@ -112,10 +111,25 @@ namespace apiwork.Controllers
                 return NotFound();
             }
 
+            // Vérifier si le service a des dépendants
+            var hasDependents = await HasDependentsOnService(id);
+            if (hasDependents)
+            {
+                return BadRequest("Impossible de supprimer ce service car il est encore utilisé par des enregistrements.");
+            }
+
             _context.Service.Remove(service);
             await _context.SaveChangesAsync();
 
             return NoContent();
+        }
+
+        // Méthode pour vérifier si un service a des dépendants
+        private async Task<bool> HasDependentsOnService(int serviceId)
+        {
+            // Vérifier si des employés ou d'autres entités sont liés à ce service
+            var dependentsCount = await _context.Salarie.CountAsync(e => e.ServiceID == serviceId);
+            return dependentsCount > 0;
         }
 
         private bool ServiceExists(int id)

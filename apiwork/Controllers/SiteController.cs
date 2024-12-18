@@ -87,10 +87,25 @@ namespace apiwork.Controllers
                 return NotFound();
             }
 
+            // Vérifier si le site a des dépendants
+            var hasDependents = await HasDependentsOnSite(id);
+            if (hasDependents)
+            {
+                return BadRequest("Impossible de supprimer ce site car il est encore utilisé par des enregistrements.");
+            }
+
             _context.Site.Remove(site);
             await _context.SaveChangesAsync();
 
             return NoContent();
+        }
+
+        // Méthode pour vérifier si un site a des dépendants
+        private async Task<bool> HasDependentsOnSite(int siteId)
+        {
+            // Vérifier si des salariés sont liés à ce site
+            var dependentsCount = await _context.Salarie.CountAsync(s => s.SiteID == siteId);
+            return dependentsCount > 0;
         }
 
         private bool SiteExists(int id)
